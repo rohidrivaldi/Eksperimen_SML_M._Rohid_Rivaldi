@@ -1,0 +1,89 @@
+name: Preprocessing Otomatis — Garbage Classification
+
+# Kapan workflow ini jalan:
+# 1. Setiap ada push ke branch main (kalau ada perubahan di folder preprocessing)
+# 2. Bisa juga dijalankan manual lewat tombol "Run workflow" di GitHub UI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "preprocessing/**"
+  workflow_dispatch:  # trigger manual, berguna buat testing
+
+jobs:
+  preprocessing:
+    name: Jalankan Preprocessing Dataset
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repo supaya bisa akses semua filenya
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python versi yang sama dengan yang saya pakai lokal
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      # Step 3: Cek environment dulu — versi Python dan pip
+      - name: Check Environment
+        run: |
+          python --version
+          pip --version
+          echo "Direktori kerja: $(pwd)"
+          echo "Isi folder:"
+          ls -la
+
+      # Step 4: Install semua dependensi yang dibutuhkan
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r preprocessing/requirements.txt
+
+      # Step 5: Download dataset dari Kaggle pake API
+      # Dataset: mostafaabla/garbage-classification (15.515 gambar, 12 kelas)
+      - name: Download Dataset dari Kaggle
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p raw_data
+          pip install kaggle
+          kaggle datasets download -d mostafaabla/garbage-classification -p ./raw_data --unzip
+          echo "Dataset berhasil di-download!"
+          echo "Isi raw_data:"
+          ls ./raw_data/
+
+      # Step 6: Jalankan script preprocessing utama
+      # Output akan tersimpan di folder garbage_preprocessing/
+      - name: Jalankan Script Preprocessing
+        run: |
+          python preprocessing/automate_M._Rohid_Rivaldi.py \
+            --input ./raw_data/garbage_classification \
+            --output ./preprocessing/garbage_preprocessing
+          echo "Preprocessing selesai!"
+          echo "Jumlah gambar hasil preprocessing:"
+          find ./preprocessing/garbage_preprocessing -name "*.png" | wc -l
+
+      # Step 7: Upload hasil preprocessing sebagai artifact GitHub
+      # Tersimpan selama 7 hari, bisa didownload dari tab Actions
+      - name: Upload Hasil Preprocessing
+        uses: actions/upload-artifact@v4
+        with:
+          name: garbage_preprocessing
+          path: preprocessing/garbage_preprocessing/
+          retention-days: 7
+
+      # Step 8: Konfirmasi workflow selesai dengan ringkasan
+      - name: Ringkasan Hasil
+        run: |
+          echo "=========================================="
+          echo "  PREPROCESSING SELESAI — M. Rohid Rivaldi"
+          echo "=========================================="
+          echo "Dataset  : Garbage Classification (12 kelas)"
+          echo "Input    : raw_data/garbage_classification/"
+          echo "Output   : preprocessing/garbage_preprocessing/"
+          echo "Target   : 224x224 px, format PNG, normalized"
+          echo "=========================================="
