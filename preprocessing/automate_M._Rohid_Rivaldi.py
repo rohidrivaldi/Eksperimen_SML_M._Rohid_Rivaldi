@@ -154,7 +154,7 @@ def preprocess_dataset(input_dir: str, output_dir: str) -> dict:
             else:
                 stats["failed"] += 1
 
-        print(f"         ✓ {class_success}/{len(img_files)} berhasil diproses\n")
+        print(f"         [OK] {class_success}/{len(img_files)} berhasil diproses\n")
 
     # ringkasan akhir
     print(f"{'='*60}")

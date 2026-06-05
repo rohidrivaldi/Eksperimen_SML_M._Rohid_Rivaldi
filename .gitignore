@@ -31,4 +31,4 @@ raw_data/
 *.tar.gz
 
 # Output preprocessing (kalau mau, bisa di-push sebagai artifact)
-# garbage_preprocessing/
+garbage_preprocessing/
